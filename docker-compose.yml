@@ -1,0 +1,38 @@
+version: '3.9' # docker-compose.ymlファイルの構文のバージョン(最新の構文を使うには最新にしておけば良い)
+services:
+  db:
+    container_name: sample-db
+    image: 'mysql:8.2.0'
+    volumes: 
+    # 名前付きボリュームにDBのデータを保存
+      - sample_db_data:/var/lib/mysql
+      # 初期データのテーブル作成処理をバインド
+      - type: bind
+        source: ./db/initdb.d
+        target: /docker-entrypoint-initdb.d
+      # 設定ファイルをバインド
+      - type: bind
+        source: ./db/conf.d
+        target: /etc/mysql/conf.d
+    env_file:
+      - ./env/db.env # 環境変数ファイルへのパス
+    ports:
+      - 3306:3306
+  api:
+    container_name: sample-api
+    build: . # イメージのビルドに使用するDockerfileへの相対パス
+    volumes:
+    # app配下をバインドマウント
+      - type: bind 
+        source: ./app
+        target: /app
+    ports:
+      - 5050:5050
+    env_file:
+      - ./env/api.env
+    # 依存するサービス名(先に起動させたいサービス)
+    depends_on:
+      - db
+# 名前付きボリュームの作成(DBのデータ保存用)
+volumes:
+  sample_db_data:
